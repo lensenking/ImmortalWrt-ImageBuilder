@@ -26,6 +26,9 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-netdata-zh-cn"    # netdata 监控
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES htop"                       # htop
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-base-zh-cn"       # 全中文基础
 
+# ------------------- 图形应用商店 (在线装/升级插件, iStore 那种) -------------------
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-store luci-i18n-store-zh-cn"
+
 # ------------------- BBR -------------------
 # BBR 由 files/etc/sysctl.d/99-bbr.conf 启用 (x86 内核已内建 bbr, 无需额外 kmod 包)
 
