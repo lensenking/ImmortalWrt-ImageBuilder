@@ -5,7 +5,10 @@ uci -q batch <<-EOF
 	set system.@system[0].hostname='N100-OpenWrt'
 	set system.@system[0].zonename='Asia/Shanghai'
 	set system.@system[0].timezone='CST-8'
+	set network.lan.ipaddr='192.168.16.16'
+	set network.lan.netmask='255.255.255.0'
 	commit luci
 	commit system
+	commit network
 EOF
 exit 0
