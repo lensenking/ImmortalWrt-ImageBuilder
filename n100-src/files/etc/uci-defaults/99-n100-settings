@@ -1,0 +1,11 @@
+#!/bin/sh
+# 首次启动执行一次: 中文 + 时区 + 主机名
+uci -q batch <<-EOF
+	set luci.main.lang='zh_cn'
+	set system.@system[0].hostname='N100-OpenWrt'
+	set system.@system[0].zonename='Asia/Shanghai'
+	set system.@system[0].timezone='CST-8'
+	commit luci
+	commit system
+EOF
+exit 0
