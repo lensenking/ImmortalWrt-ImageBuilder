@@ -1,4 +1,6 @@
 #!/bin/bash
+set -eo pipefail
+
 source shell/apk-custom-packages.sh
 #echo "✅ 你选择了第三方软件包：$CUSTOM_PACKAGES"
 if [ -z "$CUSTOM_PACKAGES" ]; then
@@ -7,15 +9,24 @@ else
   # ============= 同步第三方插件库==============
   # 同步第三方软件仓库run/apk
   echo "🔄 正在同步第三方软件仓库 Cloning apk file repo..."
-  git clone --depth=1 https://github.com/wukongdaily/apk.git /tmp/store-apk-repo
+  if ! git clone --depth=1 https://github.com/wukongdaily/apk.git /tmp/store-apk-repo; then
+    echo "Error: Failed to clone third-party package repo" >&2
+    exit 1
+  fi
 
   # 拷贝 run/arm64 下所有 run 文件和apk文件 到 extra-packages 目录
   mkdir -p /home/build/immortalwrt/extra-packages
-  cp -r /tmp/store-apk-repo/run/arm64-a53/* /home/build/immortalwrt/extra-packages/
+  if ! cp -r /tmp/store-apk-repo/run/arm64-a53/* /home/build/immortalwrt/extra-packages/; then
+    echo "Error: Failed to copy third-party packages" >&2
+    exit 1
+  fi
 
   echo "✅ Run files copied to extra-packages:"
   # 解压并拷贝apk到packages目录
-  sh shell/apk-prepare-packages.sh
+  if ! sh shell/apk-prepare-packages.sh; then
+    echo "Error: Failed to prepare APK packages" >&2
+    exit 1
+  fi
   ls -lah /home/build/immortalwrt/packages/
 fi
 
@@ -74,18 +85,34 @@ if echo "$PACKAGES" | grep -q "luci-app-openclash"; then
     mkdir -p files/etc/openclash/core
     # Download clash_meta
     META_URL="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-arm64.tar.gz"
-    wget -qO- $META_URL | tar xOvz > files/etc/openclash/core/clash_meta
+    if ! wget -qO- $META_URL | tar xOvz > files/etc/openclash/core/clash_meta; then
+        echo "Error: Failed to download clash_meta core" >&2
+        exit 1
+    fi
     chmod +x files/etc/openclash/core/clash_meta
     # Download GeoIP and GeoSite
-    wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat -O files/etc/openclash/GeoIP.dat
-    wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat -O files/etc/openclash/GeoSite.dat
+    if ! wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat -O files/etc/openclash/GeoIP.dat; then
+        echo "Error: Failed to download GeoIP.dat" >&2
+        exit 1
+    fi
+    if ! wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat -O files/etc/openclash/GeoSite.dat; then
+        echo "Error: Failed to download GeoSite.dat" >&2
+        exit 1
+    fi
     # Download latest openclash Client
-    URL=$(curl -s https://api.github.com/repos/vernesong/OpenClash/releases/latest \
+    URL=$(curl -sS https://api.github.com/repos/vernesong/OpenClash/releases/latest \
       | grep "browser_download_url.*apk" \
       | head -n1 \
       | cut -d '"' -f 4)
+    if [ -z "$URL" ]; then
+        echo "Error: Failed to determine OpenClash download URL" >&2
+        exit 1
+    fi
     echo "OpenClash latest apk: $URL"
-    wget "$URL" -P /home/build/immortalwrt/packages/
+    if ! wget "$URL" -P /home/build/immortalwrt/packages/; then
+        echo "Error: Failed to download OpenClash package" >&2
+        exit 1
+    fi
 else
     echo "⚪️ 未选择 luci-app-openclash"
 fi

@@ -1,4 +1,6 @@
 #!/bin/bash
+set -eo pipefail
+
 # Log file for debugging
 source shell/custom-packages.sh
 source shell/switch_repository.sh
@@ -28,16 +30,25 @@ if [ -z "$CUSTOM_PACKAGES" ]; then
 else
   # 下载 run 文件仓库
   echo "🔄 正在同步第三方软件仓库 Cloning run file repo..."
-  git clone --depth=1 https://github.com/wukongdaily/store.git /tmp/store-run-repo
+  if ! git clone --depth=1 https://github.com/wukongdaily/store.git /tmp/store-run-repo; then
+    echo "Error: Failed to clone third-party package repo" >&2
+    exit 1
+  fi
 
   # 拷贝 run/arm64 下所有 run 文件和ipk文件 到 extra-packages 目录
   mkdir -p /home/build/immortalwrt/extra-packages
-  cp -r /tmp/store-run-repo/run/arm64/* /home/build/immortalwrt/extra-packages/
+  if ! cp -r /tmp/store-run-repo/run/arm64/* /home/build/immortalwrt/extra-packages/; then
+    echo "Error: Failed to copy third-party packages" >&2
+    exit 1
+  fi
 
   echo "✅ Run files copied to extra-packages:"
-  ls -lh /home/build/immortalwrt/extra-packages/*.run
+  ls -lh /home/build/immortalwrt/extra-packages/*.run || true
   # 解压并拷贝ipk到packages目录
-  sh shell/prepare-packages.sh
+  if ! sh shell/prepare-packages.sh; then
+    echo "Error: Failed to prepare IPK packages" >&2
+    exit 1
+  fi
   ls -lah /home/build/immortalwrt/packages/
   # 添加架构优先级信息
   sed -i '1i\
@@ -82,11 +93,20 @@ if echo "$PACKAGES" | grep -q "luci-app-openclash"; then
     mkdir -p files/etc/openclash/core
     # Download clash_meta
     META_URL="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-arm64.tar.gz"
-    wget -qO- $META_URL | tar xOvz > files/etc/openclash/core/clash_meta
+    if ! wget -qO- $META_URL | tar xOvz > files/etc/openclash/core/clash_meta; then
+        echo "Error: Failed to download clash_meta core" >&2
+        exit 1
+    fi
     chmod +x files/etc/openclash/core/clash_meta
     # Download GeoIP and GeoSite
-    wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat -O files/etc/openclash/GeoIP.dat
-    wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat -O files/etc/openclash/GeoSite.dat
+    if ! wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat -O files/etc/openclash/GeoIP.dat; then
+        echo "Error: Failed to download GeoIP.dat" >&2
+        exit 1
+    fi
+    if ! wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat -O files/etc/openclash/GeoSite.dat; then
+        echo "Error: Failed to download GeoSite.dat" >&2
+        exit 1
+    fi
 else
     echo "⚪️ 未选择 luci-app-openclash"
 fi

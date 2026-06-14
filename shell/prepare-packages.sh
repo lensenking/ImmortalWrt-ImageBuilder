@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/bash
+set -eo pipefail
 
 BASE_DIR="extra-packages"
 TEMP_DIR="$BASE_DIR/temp-unpack"
@@ -12,7 +13,10 @@ mkdir -p "$TEMP_DIR" "$TARGET_DIR"
 for run_file in "$BASE_DIR"/*.run; do
     [ -e "$run_file" ] || continue
     echo "🧩 解压 $run_file -> $TEMP_DIR"
-    sh "$run_file" --target "$TEMP_DIR" --noexec
+    if ! sh "$run_file" --target "$TEMP_DIR" --noexec; then
+        echo "Error: Failed to extract $run_file" >&2
+        exit 1
+    fi
 done
 
 # 1. 收集 run 解压出的 .ipk 文件
