@@ -1,4 +1,6 @@
 #!/bin/bash
+set -eo pipefail
+
 # Log file for debugging
 source shell/custom-packages.sh
 source shell/switch_repository.sh
@@ -27,16 +29,25 @@ else
   # ============= 同步第三方插件库==============
   # 同步第三方软件仓库run/ipk
   echo "🔄 正在同步第三方软件仓库 Cloning run file repo..."
-  git clone --depth=1 https://github.com/wukongdaily/store.git /tmp/store-run-repo
+  if ! git clone --depth=1 https://github.com/wukongdaily/store.git /tmp/store-run-repo; then
+    echo "Error: Failed to clone third-party package repo" >&2
+    exit 1
+  fi
 
   # 拷贝 run/x86 下所有 run 文件和ipk文件 到 extra-packages 目录
   mkdir -p /home/build/immortalwrt/extra-packages
-  cp -r /tmp/store-run-repo/run/x86/* /home/build/immortalwrt/extra-packages/
+  if ! cp -r /tmp/store-run-repo/run/x86/* /home/build/immortalwrt/extra-packages/; then
+    echo "Error: Failed to copy third-party packages" >&2
+    exit 1
+  fi
 
   echo "✅ Run files copied to extra-packages:"
-  ls -lh /home/build/immortalwrt/extra-packages/*.run
+  ls -lh /home/build/immortalwrt/extra-packages/*.run || true
   # 解压并拷贝ipk到packages目录
-  sh shell/prepare-packages.sh
+  if ! sh shell/prepare-packages.sh; then
+    echo "Error: Failed to prepare IPK packages" >&2
+    exit 1
+  fi
   ls -lah /home/build/immortalwrt/packages/
 fi
 
@@ -76,18 +87,34 @@ if echo "$PACKAGES" | grep -q "luci-app-openclash"; then
     mkdir -p files/etc/openclash/core
     # Download clash_meta
     META_URL="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-amd64-v1.tar.gz"
-    wget -qO- $META_URL | tar xOvz > files/etc/openclash/core/clash_meta
+    if ! wget -qO- $META_URL | tar xOvz > files/etc/openclash/core/clash_meta; then
+        echo "Error: Failed to download clash_meta core" >&2
+        exit 1
+    fi
     chmod +x files/etc/openclash/core/clash_meta
     # Download GeoIP and GeoSite
-    wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat -O files/etc/openclash/GeoIP.dat
-    wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat -O files/etc/openclash/GeoSite.dat
+    if ! wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat -O files/etc/openclash/GeoIP.dat; then
+        echo "Error: Failed to download GeoIP.dat" >&2
+        exit 1
+    fi
+    if ! wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat -O files/etc/openclash/GeoSite.dat; then
+        echo "Error: Failed to download GeoSite.dat" >&2
+        exit 1
+    fi
     # Download latest openclash Client
-    URL=$(curl -s https://api.github.com/repos/vernesong/OpenClash/releases/latest \
+    URL=$(curl -sS https://api.github.com/repos/vernesong/OpenClash/releases/latest \
       | grep "browser_download_url.*ipk" \
       | head -n1 \
       | cut -d '"' -f 4)
+    if [ -z "$URL" ]; then
+        echo "Error: Failed to determine OpenClash download URL" >&2
+        exit 1
+    fi
     echo "OpenClash latest ipk: $URL"
-    wget "$URL" -P /home/build/immortalwrt/packages/
+    if ! wget "$URL" -P /home/build/immortalwrt/packages/; then
+        echo "Error: Failed to download OpenClash package" >&2
+        exit 1
+    fi
 else
     echo "⚪️ 未选择 luci-app-openclash"
 fi
@@ -98,7 +125,10 @@ if echo "$PACKAGES" | grep -q "luci-app-ssr-plus"; then
     # Download mihomo
     MIHOMO_URL="https://github.com/MetaCubeX/mihomo/releases/download/v1.19.24/mihomo-linux-amd64-compatible-v1.19.24.gz"
     mkdir -p files/usr/bin
-    wget -qO- "$MIHOMO_URL" | gzip -dc > files/usr/bin/mihomo
+    if ! wget -qO- "$MIHOMO_URL" | gzip -dc > files/usr/bin/mihomo; then
+        echo "Error: Failed to download mihomo core" >&2
+        exit 1
+    fi
     chmod +x files/usr/bin/mihomo
     echo "✅ 已下载 mihomo core"
     ls -lah files/usr/bin

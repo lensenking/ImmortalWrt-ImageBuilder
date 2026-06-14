@@ -1,3 +1,5 @@
 #!/bin/sh
-cp /mnt/banner /etc/banner
-rm /mnt/banner
+if [ -f /mnt/banner ]; then
+    cp /mnt/banner /etc/banner
+    rm /mnt/banner
+fi
