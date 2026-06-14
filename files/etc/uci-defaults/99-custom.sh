@@ -102,7 +102,7 @@ elif [ "$count" -gt 1 ]; then
     if [ -f "$IP_VALUE_FILE" ]; then
         CUSTOM_IP=$(cat "$IP_VALUE_FILE")
         # 用户在UI上设置的路由器后台管理地址
-        uci set network.lan.ipaddr=$CUSTOM_IP
+        uci set network.lan.ipaddr="$CUSTOM_IP"
         echo "custom router ip is $CUSTOM_IP" >> $LOGFILE
     else
         uci set network.lan.ipaddr='192.168.100.1'

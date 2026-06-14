@@ -24,7 +24,7 @@ IP_VALUE_FILE="/etc/config/custom_router_ip.txt"
 if [ -f "$IP_VALUE_FILE" ]; then
     CUSTOM_IP=$(cat "$IP_VALUE_FILE")
     # 设置路由器的管理后台地址
-    uci set network.lan.ipaddr=$CUSTOM_IP
+    uci set network.lan.ipaddr="$CUSTOM_IP"
     echo "custom router ip is $CUSTOM_IP" >> $LOGFILE
 fi
 
@@ -35,8 +35,8 @@ if [ "$enable_pppoe" = "yes" ]; then
     echo "PPPoE is enabled at $(date)" >> $LOGFILE
     # 设置拨号信息
     uci set network.wan.proto='pppoe'                
-    uci set network.wan.username=$pppoe_account     
-    uci set network.wan.password=$pppoe_password     
+    uci set network.wan.username="$pppoe_account"
+    uci set network.wan.password="$pppoe_password"     
     uci set network.wan.peerdns='1'                  
     uci set network.wan.auto='1' 
     echo "PPPoE configuration completed successfully." >> $LOGFILE
