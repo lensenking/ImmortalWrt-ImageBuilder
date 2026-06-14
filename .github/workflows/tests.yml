@@ -1,0 +1,35 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'shell/**'
+      - 'files/**'
+      - 'tests/**'
+      - '.github/workflows/tests.yml'
+  pull_request:
+    paths:
+      - 'shell/**'
+      - 'files/**'
+      - 'tests/**'
+      - '.github/workflows/tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install bats and helpers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bats
+          mkdir -p tests/test_helper
+          git clone --depth=1 https://github.com/bats-core/bats-support.git tests/test_helper/bats-support
+          git clone --depth=1 https://github.com/bats-core/bats-assert.git tests/test_helper/bats-assert
+          git clone --depth=1 https://github.com/bats-core/bats-file.git tests/test_helper/bats-file
+
+      - name: Run unit tests
+        run: bats tests/
